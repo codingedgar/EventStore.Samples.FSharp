@@ -1,45 +1,9 @@
 open FsUnit.Xunit
 open FsUnit.CustomMatchers
-open System.Text.RegularExpressions
 open Xunit
-open NHamcrest.Core
+open CommonTests
 
 open WriteOneEvent
-
-let throwWithRegexMessage (m:string) (t:System.Type) = CustomMatcher<obj>(sprintf "%A \"%A\"" (string t) m,
-                                                                    fun f -> match f with
-                                                                             | :? (unit -> unit) as testFunc ->
-                                                                                 try
-                                                                                   testFunc()
-                                                                                   false
-                                                                                 with
-                                                                                 | ex -> ex.GetType() = t && Regex.IsMatch (ex.Message, m)
-                                                                             | _ -> false)
-
-let debugResponse f = 
-    try 
-        f() 
-        |> fun r -> Ok (f.GetType(), r)
-    with e -> Error e
-    |> printfn "%A"
-
-let debugResponse2 streamName version f = 
-    printfn "http://localhost:2113/web/index.html#/streams/%s" streamName
-    printfn "%A" version
-    try 
-        f() 
-        |> fun r -> Ok (f.GetType(), r)
-    with e -> Error e
-    |> printfn "%A"
-
-let defaultEventArgs () =
-    let id = System.Guid.NewGuid()
-    let data = System.Text.Encoding.UTF8.GetBytes """WtriteOneEvent-test"""
-    let metadata = System.Text.Encoding.UTF8.GetBytes ""
-    let typeName = "WtriteOneEvent"
-    let isJson = true // with this it shows nicely in the web, even if it isn't JSON 😅
-
-    (id,typeName,isJson,data,metadata)
 
 let beforeEach () =
     let streamName = "WtriteOneEvent-test-" + System.Guid.NewGuid().ToString()
@@ -215,7 +179,7 @@ let ``async write 5 correr erros``() =
     let event2 = [| EventStore.ClientAPI.EventData args2 |]
 
     let f event ()=
-                AsyncWrite4 streamName version event
+                AsyncWrite5 streamName version event
                 |> Async.RunSynchronously
                 |> ignore
     
@@ -244,7 +208,7 @@ let ``version NoStream``() =
     let version = int64(EventStore.ClientAPI.ExpectedVersion.NoStream)
 
     let f event ()=
-                AsyncWrite4 streamName version event
+                AsyncWrite5 streamName version event
                 |> Async.RunSynchronously
                 |> ignore
     
@@ -270,7 +234,7 @@ let ``version StreamExists``() =
     let version = int64(EventStore.ClientAPI.ExpectedVersion.StreamExists)
 
     let f event ()=
-                AsyncWrite4 streamName version event
+                AsyncWrite5 streamName version event
                 |> Async.RunSynchronously
                 |> ignore
     
@@ -279,17 +243,16 @@ let ``version StreamExists``() =
     // debugResponse2 streamName version (f event2)
 
     f event0
-    |> should (throwWithRegexMessage @"Append failed due to WrongExpectedVersion. Stream: WtriteOneEvent-test-.{36}, Expected version: -4, Current version: 0") typeof<EventStore.ClientAPI.Exceptions.WrongExpectedVersionException>
-    
+    |> should (throwWithRegexMessage @"Append failed due to WrongExpectedVersion. Stream: WtriteOneEvent-test-.{36}, Expected version: -4, Current version: -1") typeof<EventStore.ClientAPI.Exceptions.WrongExpectedVersionException>
     f event1
-    |> should (throwWithRegexMessage @"Append failed due to WrongExpectedVersion. Stream: WtriteOneEvent-test-.{36}, Expected version: -4, Current version: 0") typeof<EventStore.ClientAPI.Exceptions.WrongExpectedVersionException>
+    |> should (throwWithRegexMessage @"Append failed due to WrongExpectedVersion. Stream: WtriteOneEvent-test-.{36}, Expected version: -4, Current version: -1") typeof<EventStore.ClientAPI.Exceptions.WrongExpectedVersionException>
     
     f event2
-    |> should (throwWithRegexMessage @"Append failed due to WrongExpectedVersion. Stream: WtriteOneEvent-test-.{36}, Expected version: -4, Current version: 0") typeof<EventStore.ClientAPI.Exceptions.WrongExpectedVersionException>
+    |> should (throwWithRegexMessage @"Append failed due to WrongExpectedVersion. Stream: WtriteOneEvent-test-.{36}, Expected version: -4, Current version: -1") typeof<EventStore.ClientAPI.Exceptions.WrongExpectedVersionException>
     // I cannot find any documentation aboy SreamExists version, but it looks like its -4
 
 [<Fact>]
-let ``only version Any``() =
+let ``version Any``() =
 
     let (streamName, _, event0) = beforeEach()
     let (_, _, event1) = beforeEach()
@@ -297,7 +260,7 @@ let ``only version Any``() =
     let version = int64(EventStore.ClientAPI.ExpectedVersion.Any)
 
     let f event ()=
-                AsyncWrite4 streamName version event
+                AsyncWrite5 streamName version event
                 |> Async.RunSynchronously
                 |> ignore
     

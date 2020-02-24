@@ -5,10 +5,11 @@
     <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Program.fs" />
-    <Compile Include="ProgramTest.fs" />
-  </ItemGroup>
-  <ItemGroup>
+    <Compile Include="../Common/Infrastructure.fs" Link="Infrastructure.fs" />
+    <Compile Include="../Common/CommonTests.fs" Link="CommonTests.fs" />
+    <ProjectReference Include="../Common/Common.fsproj" />
+    <Compile Include="WriteOneEvent.fs" />
+    <Compile Include="WriteOneEventTest.fs" />
     <PackageReference Include="EventStore.Client" Version="5.0.6" />
     <PackageReference Include="FsUnit.xUnit" Version="3.8.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
